@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block title %}Thành tựu của bạn{% endblock %}
+{% block content %}
+<h2 class="mb-4 text-center">🎖️ Thành tựu đã đạt</h2>
+<ul class="list-group">
+  {% for a in achievements %}
+    <li class="list-group-item">
+      <strong>{{ a.name }}</strong>: {{ a.description }}
+    </li>
+  {% else %}
+    <li class="list-group-item">Chưa đạt thành tựu nào.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

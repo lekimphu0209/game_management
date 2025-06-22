@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+{% block title %}Quản lý Vũ khí{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4" style="color: #00bfff;">🔧 Quản lý Hệ thống Vũ khí</h2>
+
+
+    <!-- Chọn chế độ hiển thị -->
+    <form method="GET" class="mb-4 d-flex gap-2">
+        <button type="submit" name="view" value="used" class="btn btn-outline-secondary">🔥 Vũ khí sử dụng nhiều</button>
+        <button type="submit" name="view" value="all" class="btn btn-outline-secondary">📦 Tất cả vũ khí</button>
+    </form>
+
+    <!-- Thêm vũ khí -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            ➕ Thêm vũ khí mới
+        </div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="name" class="form-control" placeholder="Tên vũ khí" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="type" class="form-control" placeholder="Loại" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" name="damage" class="form-control" placeholder="Sát thương" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="rarity" class="form-control" placeholder="Độ hiếm" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success w-100">Thêm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách vũ khí -->
+    {% if view_mode == 'used' %}
+        <h4 style="color: #007bff; font-weight: bold;">🔥 Vũ khí được sử dụng nhiều</h4>
+        <table class="table table-hover table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Tên</th>
+                    <th>Loại</th>
+                    <th>Độ hiếm</th>
+                    <th>Số lần sử dụng</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for weapon in usage_stats %}
+                <tr>
+                    <td>{{ weapon.name }}</td>
+                    <td>{{ weapon.type }}</td>
+                    <td>{{ weapon.rarity }}</td>
+                    <td>{{ weapon.usage_count }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center">Chưa có vũ khí nào được sử dụng.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <h4 style="color: #007bff; font-weight: bold;">📦 Danh sách Tất cả Vũ khí</h4>
+
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Tên</th>
+                    <th>Loại</th>
+                    <th>Sát thương</th>
+                    <th>Độ hiếm</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in all_items %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.type }}</td>
+                    <td>{{ item.damage }}</td>
+                    <td>{{ item.rarity }}</td>
+                    <td><a class="btn btn-sm btn-primary" href="{{ url_for('edit_weapon', item_id=item.item_id) }}">Chỉnh sửa</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center">Chưa có vũ khí nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

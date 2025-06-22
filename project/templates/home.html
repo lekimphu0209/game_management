@@ -1,0 +1,19 @@
+<!-- templates/home.html -->
+{% extends "layout.html" %}
+{% block title %}Trang chủ{% endblock %}
+
+{% block content %}
+<h1>Chào mừng bạn đến với GameSite!</h1>
+<p>Hãy đăng nhập để xem thông tin.</p>
+
+<div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
+    <a href="{{ url_for('login') }}">
+        <button style="padding: 10px 20px;">Đăng nhập Người chơi</button>
+    </a>
+    <a href="{{ url_for('admin_login') }}">
+        <button style="padding: 10px 20px; background-color: #dc3545; color: white;">Đăng nhập Quản trị viên</button>
+    </a>
+</div>
+
+
+{% endblock %}

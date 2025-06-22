@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+
+{% block title %}Cập nhật thông tin người chơi{% endblock %}
+
+{% block content %}
+<h2>Cập nhật thông tin người chơi: {{ player.username }}</h2>
+
+<form method="POST">
+    <label for="email">Email mới:</label><br>
+    <input type="email" id="email" name="email" value="{{ player.email }}" required><br><br>
+
+    <label for="password">Mật khẩu mới (bỏ trống nếu không muốn đổi):</label><br>
+    <input type="password" id="password" name="password"><br><br>
+
+    <button type="submit">Cập nhật</button>
+    <a href="{{ url_for('admin_dashboard') }}">Quay lại</a>
+</form>
+{% endblock %}
