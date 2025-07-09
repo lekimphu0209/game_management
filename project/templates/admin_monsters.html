@@ -13,26 +13,54 @@
     form.monster-form {
         margin-bottom: 30px;
         border: 1px solid #ccc;
-        padding: 15px;
+        padding: 10px;
         border-radius: 6px;
         background-color: #fefefe;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
     }
 
-    form.monster-form label {
+    .form-group {
+        flex: 1 1 13%;
+        min-width: 120px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
         font-weight: bold;
+        font-size: 13px;
     }
 
-    form.monster-form input {
-        margin-bottom: 10px;
-        width: 100%;
-        padding: 6px;
+    .form-group input {
+        padding: 5px;
         border: 1px solid #ccc;
         border-radius: 4px;
+    }
+
+    .btn-save {
+        padding: 6px 16px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        height: 38px;
     }
 
     table {
         width: 100%;
         border-collapse: collapse;
+        margin-top: 10px;
+        background-color: #ffffff;
+    }
+
+    th, td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: center;
     }
 
     th {
@@ -40,15 +68,6 @@
         color: #007acc;
         font-weight: bold;
         font-size: 15px;
-        border: 1px solid #ccc;
-        padding: 8px;
-        text-align: center;
-    }
-
-    td {
-        border: 1px solid #ccc;
-        padding: 8px;
-        text-align: center;
     }
 
     .row-light {
@@ -58,51 +77,46 @@
     .row-dark {
         background-color: #f0f8ff;
     }
-
-    .btn-save {
-        padding: 6px 12px;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .btn-edit {
-        background-color: #2196F3;
-        color: white;
-        padding: 5px 10px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
 </style>
+
 
 <h2 class="header-title">Quản lý Quái Vật</h2>
 
 <form method="POST" class="monster-form">
     <input type="hidden" name="id" value="{{ monster.monster_id if monster else '' }}">
 
-    <label>Tên:</label>
-    <input type="text" name="name" required value="{{ monster.name if monster else '' }}">
+    <div class="form-group">
+        <label>Tên</label>
+        <input type="text" name="name" required value="{{ monster.name if monster else '' }}">
+    </div>
+    <div class="form-group">
+        <label>HP</label>
+        <input type="number" name="hp" required value="{{ monster.hp if monster else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Damage</label>
+        <input type="number" name="damage" required value="{{ monster.damage if monster else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Point</label>
+        <input type="number" name="point" required value="{{ monster.point if monster else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Loại</label>
+        <input type="text" name="type" required value="{{ monster.type if monster else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Tốc độ</label>
+        <input type="text" name="speed" required value="{{ monster.speed if monster else '' }}">
+    </div>
 
-    <label>HP:</label>
-    <input type="number" name="hp" required value="{{ monster.hp if monster else '' }}">
-
-    <label>Damage:</label>
-    <input type="number" name="damage" required value="{{ monster.damage if monster else '' }}">
-
-    <label>Point:</label>
-    <input type="number" name="point" required value="{{ monster.point if monster else '' }}">
-
-    <label>Loại:</label>
-    <input type="text" name="type" required value="{{ monster.type if monster else '' }}">
-
-    <label>Tốc độ:</label>
-    <input type="text" name="speed" required value="{{ monster.speed if monster else '' }}">
-
-    <button type="submit" class="btn-save">Lưu</button>
+    <!-- Nút Lưu căn giữa -->
+    <div style="width: 100%; text-align: center; margin-top: 10px;">
+        <button type="submit" class="btn-save">Lưu</button>
+    </div>
 </form>
+
+
 
 
 <table>

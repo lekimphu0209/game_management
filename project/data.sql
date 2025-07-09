@@ -1,134 +1,498 @@
--- Xóa dữ liệu bảng phụ thuộc trước
-DELETE FROM admins;
-DELETE FROM session_monster_kills;
-DELETE FROM character_equipment;
-DELETE FROM game_sessions;
-DELETE FROM achievements;
-DELETE FROM characters;
-DELETE FROM leaderboard;
+DO $$
+BEGIN
+    -- Tắt ràng buộc khóa ngoại tạm thời (nếu cần)
+    -- EXECUTE 'SET session_replication_role = replica';
 
--- Xóa dữ liệu bảng độc lập hoặc ít bị phụ thuộc hơn
-DELETE FROM items;
-DELETE FROM monsters;
-DELETE FROM players;
+    -- Xóa dữ liệu theo thứ tự phụ thuộc
+    DELETE FROM session_items;
+    DELETE FROM session_boss_kill;
+    DELETE FROM session_monster_kill;
+    DELETE FROM session_character;
+    DELETE FROM character_on_game;
+    DELETE FROM game_sessions;
+    DELETE FROM achievements;
+    DELETE FROM items;
+    DELETE FROM monsters;
+    DELETE FROM characters;
+    DELETE FROM players;
+    DELETE FROM admins;
 
-
-DROP TABLE IF EXISTS character_equipment;
-
-UPDATE game_sessions
-SET final_score = NULL;
-
-DROP TABLE IF EXISTS leaderboard;
-
-DELETE FROM player_hp_events WHERE session_id IN (SELECT session_id FROM game_sessions);
-DELETE FROM game_sessions;  -- Sau đó mới xóa được
+    -- Bật lại ràng buộc (nếu đã tắt)
+    -- EXECUTE 'SET session_replication_role = DEFAULT';
+END $$;
 
 DO $$
 DECLARE
     r RECORD;
 BEGIN
     FOR r IN
-        SELECT trigger_name, event_object_table
+        SELECT event_object_table, trigger_name
         FROM information_schema.triggers
+        WHERE trigger_schema = 'public'
     LOOP
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %I;', r.trigger_name, r.event_object_table);
     END LOOP;
-END$$;
-
--- Dọn dẹp trigger nếu đã tồn tại
-DROP TRIGGER IF EXISTS trg_before_insert_combined ON session_monster_kills;
-DROP TRIGGER IF EXISTS trg_boss_kill ON session_monster_kills;
-DROP TRIGGER IF EXISTS trg_boss_kill_update ON session_monster_kills;
-
--- Dọn dẹp function nếu cần
-DROP FUNCTION IF EXISTS trg_calc_points_and_update_score() CASCADE;
-DROP FUNCTION IF EXISTS trg_boss_kill_updates() CASCADE;
-DROP FUNCTION IF EXISTS trg_update_end_time_when_boss_killed() CASCADE;
+END $$;
 
 
-
-
--- Bảng người chơi
-CREATE TABLE IF NOT EXISTS  players (
-    player_id INT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS players (
+    player_id int PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(100) NOT NULL,
-    highest_score INT DEFAULT 0,
-    time_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    
+    time_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    highest_score INT DEFAULT 0
+);
+INSERT INTO Players (player_id, username, email, password, time_created) VALUES
+(1, 'player01', 'player01@example.com', 'pass01', '2024-06-01 10:00:00'),
+(2, 'player02', 'player02@example.com', 'pass02', '2024-06-01 10:01:00'),
+(3, 'player03', 'player03@example.com', 'pass03', '2024-06-01 10:02:00'),
+(4, 'player04', 'player04@example.com', 'pass04', '2024-06-01 10:03:00'),
+(5, 'player05', 'player05@example.com', 'pass05', '2024-06-01 10:04:00'),
+(6, 'player06', 'player06@example.com', 'pass06', '2024-06-01 10:05:00'),
+(7, 'player07', 'player07@example.com', 'pass07', '2024-06-01 10:06:00'),
+(8, 'player08', 'player08@example.com', 'pass08', '2024-06-01 10:07:00'),
+(9, 'player09', 'player09@example.com', 'pass09', '2024-06-01 10:08:00'),
+(10, 'player10', 'player10@example.com', 'pass10', '2024-06-01 10:09:00'),
+(11, 'player11', 'player11@example.com', 'pass11', '2024-06-01 10:10:00'),
+(12, 'player12', 'player12@example.com', 'pass12', '2024-06-01 10:11:00'),
+(13, 'player13', 'player13@example.com', 'pass13', '2024-06-01 10:12:00'),
+(14, 'player14', 'player14@example.com', 'pass14', '2024-06-01 10:13:00'),
+(15, 'player15', 'player15@example.com', 'pass15', '2024-06-01 10:14:00'),
+(16, 'player16', 'player16@example.com', 'pass16', '2024-06-01 10:15:00'),
+(17, 'player17', 'player17@example.com', 'pass17', '2024-06-01 10:16:00'),
+(18, 'player18', 'player18@example.com', 'pass18', '2024-06-01 10:17:00'),
+(19, 'player19', 'player19@example.com', 'pass19', '2024-06-01 10:18:00'),
+(20, 'player20', 'player20@example.com', 'pass20', '2024-06-01 10:19:00'),
+(21, 'player21', 'player21@example.com', 'pass21', '2024-06-01 10:20:00'),
+(22, 'player22', 'player22@example.com', 'pass22', '2024-06-01 10:21:00'),
+(23, 'player23', 'player23@example.com', 'pass23', '2024-06-01 10:22:00'),
+(24, 'player24', 'player24@example.com', 'pass24', '2024-06-01 10:23:00'),
+(25, 'player25', 'player25@example.com', 'pass25', '2024-06-01 10:24:00'),
+(26, 'player26', 'player26@example.com', 'pass26', '2024-06-01 10:25:00'),
+(27, 'player27', 'player27@example.com', 'pass27', '2024-06-01 10:26:00'),
+(28, 'player28', 'player28@example.com', 'pass28', '2024-06-01 10:27:00'),
+(29, 'player29', 'player29@example.com', 'pass29', '2024-06-01 10:28:00'),
+(30, 'player30', 'player30@example.com', 'pass30', '2024-06-01 10:29:00');
+
+DROP TABLE Game_sessions CASCADE;
+CREATE TABLE IF NOT EXISTS Game_sessions (
+    session_id int PRIMARY KEY,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
+    final_score INT,
+    boss_killed BOOLEAN,
+    player_id INT REFERENCES Players(player_id) ON DELETE CASCADE
 );
 
+INSERT INTO game_sessions (session_id, start_time, player_id) VALUES
+(1, '2024-06-01 10:10:00', 1),
+(2, '2024-06-01 10:11:00', 2),
+(3, '2024-06-01 10:12:00', 3),
+(4, '2024-06-01 10:13:00', 4),
+(5, '2024-06-01 10:14:00', 5),
+(6, '2024-06-01 10:15:00', 6),
+(7, '2024-06-01 10:16:00', 7),
+(8, '2024-06-01 10:17:00', 8),
+(9, '2024-06-01 10:18:00', 9),
+(10, '2024-06-01 10:19:00', 10),
+(11, '2024-06-01 10:20:00', 11),
+(12, '2024-06-01 10:21:00', 12),
+(13, '2024-06-01 10:22:00', 13),
+(14, '2024-06-01 10:23:00', 14),
+(15, '2024-06-01 10:24:00', 15),
+(16, '2024-06-01 10:25:00', 16),
+(17, '2024-06-01 10:26:00', 17),
+(18, '2024-06-01 10:27:00', 18),
+(19, '2024-06-01 10:28:00', 19),
+(20, '2024-06-01 10:29:00', 20),
+(21, '2024-06-01 10:30:00', 21),
+(22, '2024-06-01 10:31:00', 22),
+(23, '2024-06-01 10:32:00', 23),
+(24, '2024-06-01 10:33:00', 24),
+(25, '2024-06-01 10:34:00', 25),
+(26, '2024-06-01 10:35:00', 26),
+(27, '2024-06-01 10:36:00', 27),
+(28, '2024-06-01 10:37:00', 28),
+(29, '2024-06-01 10:38:00', 29),
+(30, '2024-06-01 10:39:00', 30);
 
 
 
--- Chèn dữ liệu mẫu cho người chơi
--- Chèn dữ liệu mẫu KHÔNG cần highest_score
-INSERT INTO players (player_id, username, email, password, time_created) VALUES
-(1, 'player_one', 'player1@example.com', 'pass1', '2025-06-01 08:00:00'),
-(2, 'dragonSlayer', 'dragon@example.com', 'sword123', '2025-06-01 08:10:00'),
-(3, 'heroicKnight', 'knight@example.com', 'armor456', '2025-06-01 08:20:00'),
-(4, 'shadowNinja', 'ninja@example.com', 'stealth789', '2025-06-01 08:30:00'),
-(5, 'spaceRider', 'space@example.com', 'rocketpass', '2025-06-01 08:40:00'),
-(6, 'ghostHunter', 'ghost@example.com', 'trap123', '2025-06-01 08:50:00'),
-(7, 'magicElf', 'elf@example.com', 'bowpass', '2025-06-01 09:00:00'),
-(8, 'zombieSurvivor', 'zombie@example.com', 'brains!', '2025-06-01 09:10:00'),
-(9, 'wizardKing', 'wizard@example.com', 'spellcast', '2025-06-01 09:20:00'),
-(10, 'cyberSamurai', 'cyber@example.com', 'techno321', '2025-06-01 09:30:00'),
-(11, 'lavaBeast', 'lava@example.com', 'fire999', '2025-06-01 09:40:00'),
-(12, 'iceQueen', 'ice@example.com', 'cold456', '2025-06-01 09:50:00'),
-(13, 'stormBringer', 'storm@example.com', 'thunder123', '2025-06-01 10:00:00'),
-(14, 'desertFox', 'fox@example.com', 'sneaky321', '2025-06-01 10:10:00'),
-(15, 'metalGiant', 'metal@example.com', 'ironman', '2025-06-01 10:20:00'),
-(16, 'nightRider', 'nightrider@example.com', 'midnight', '2025-06-01 10:30:00'),
-(17, 'forestGuardian', 'forest@example.com', 'treesafe', '2025-06-01 10:40:00'),
-(18, 'firePhoenix', 'phoenix@example.com', 'riseup', '2025-06-01 10:50:00'),
-(19, 'sandAssassin', 'sand@example.com', 'blade987', '2025-06-01 11:00:00'),
-(20, 'skyGlider', 'sky@example.com', 'float321', '2025-06-01 11:10:00');
-
-
-
-CREATE TABLE leaderboard (
-    leaderboard_id SERIAL PRIMARY KEY,
-    player_id INT UNIQUE REFERENCES players(player_id),
-    rank INT,
-    highest_score INT,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Bảng Monster
+CREATE TABLE IF NOT EXISTS monsters (
+    monster_id int PRIMARY KEY,
+    name VARCHAR(100),
+    hp INT,
+    point INT,
+    damage INT,
+    type VARCHAR(50),
+    speed VARCHAR(20)
 );
+
+ 
+-- Chèn dữ liệu mẫu cho quái vật
+INSERT INTO monsters (monster_id , name, hp, point, damage, type, speed) VALUES
+(1 ,'Weak monster', 50, 10, 2, 'Normal', 'Fast'),
+(2 ,'Strong monster', 400, 25, 10, 'Normal', 'Normal'),
+(3 , 'Boss', 5000, 500, 999, 'Boss', 'Slow');
+
+
+-- 1. Xóa IDENTITY cũ nếu có
+ALTER TABLE monsters 
+ALTER COLUMN monster_id DROP IDENTITY IF EXISTS;
+
+-- 2. Gán lại thuộc tính IDENTITY để tự tăng
+ALTER TABLE monsters 
+ALTER COLUMN monster_id ADD GENERATED BY DEFAULT AS IDENTITY;
+
+-- 3. Cập nhật giá trị sequence để tránh trùng lặp khóa
+SELECT setval(
+  pg_get_serial_sequence('monsters', 'monster_id'),
+  (SELECT MAX(monster_id) FROM monsters)
+);
+
+-- Bảng Session_boss_kill
+CREATE TABLE IF NOT EXISTS Session_boss_kill (
+    session_id INT REFERENCES Game_sessions(session_id) ON DELETE CASCADE,
+    monster_id INT REFERENCES Monster(monster_id),
+    kill_time int,
+    points_earned INT,
+    PRIMARY KEY (session_id, monster_id)
+);
+
+CREATE OR REPLACE FUNCTION trg_on_boss_kill_insert()
+RETURNS TRIGGER AS $$
+DECLARE
+    session_start TIMESTAMP;
+    seconds INT := NEW.kill_time;
+BEGIN
+    -- Nếu không phải là boss thì không làm gì
+    IF NEW.monster_id != 3 THEN
+        RETURN NEW;
+    END IF;
+
+    -- Tính điểm dựa vào kill_time
+    IF seconds BETWEEN 300 AND 359 THEN
+        NEW.points_earned := 1500;
+    ELSIF seconds BETWEEN 360 AND 419 THEN
+        NEW.points_earned := 1250;
+    ELSIF seconds BETWEEN 420 AND 479 THEN
+        NEW.points_earned := 1000;
+    ELSIF seconds BETWEEN 480 AND 539 THEN
+        NEW.points_earned := 750;
+    ELSIF seconds BETWEEN 540 AND 599 THEN
+        NEW.points_earned := 500;
+    ELSE
+        NEW.points_earned := 0;
+    END IF;
+
+    -- Lấy start_time để tính end_time
+    SELECT start_time INTO session_start
+    FROM Game_sessions
+    WHERE session_id = NEW.session_id;
+
+    -- Cập nhật Game_sessions
+    UPDATE Game_sessions
+    SET
+        boss_killed = TRUE,
+        end_time = session_start + (seconds || ' seconds')::interval
+    WHERE session_id = NEW.session_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_on_boss_kill_insert
+BEFORE INSERT ON Session_boss_kill
+FOR EACH ROW
+EXECUTE FUNCTION trg_on_boss_kill_insert();
+
+
+
+
+
+
+-- Bảng Session_monster_kill
+CREATE TABLE IF NOT EXISTS Session_monster_kill (
+    session_id INT REFERENCES Game_sessions(session_id) ON DELETE CASCADE,
+    monster_id INT REFERENCES Monster(monster_id),
+    kill_count INT,
+    points_earned INT,
+    PRIMARY KEY (session_id, monster_id)
+);
+
+CREATE OR REPLACE FUNCTION calc_monster_kill_points()
+RETURNS TRIGGER AS $$
+DECLARE
+    monster_point INT;
+BEGIN
+    -- Lấy điểm của quái từ bảng Monster
+    SELECT point INTO monster_point
+    FROM Monsters
+    WHERE monster_id = NEW.monster_id;
+
+    -- Tính điểm = số quái giết × điểm mỗi quái
+    NEW.points_earned := NEW.kill_count * monster_point;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_calc_monster_kill_points
+BEFORE INSERT OR UPDATE ON Session_monster_kill
+FOR EACH ROW
+EXECUTE FUNCTION calc_monster_kill_points();
+
+
+
+CREATE OR REPLACE FUNCTION update_final_score()
+RETURNS TRIGGER AS $$
+DECLARE
+    sid INT;
+    mons_score INT := 0;
+    boss_score INT := 0;
+BEGIN
+    sid := COALESCE(NEW.session_id, OLD.session_id);
+
+    -- Tính điểm quái phụ
+    SELECT COALESCE(SUM(points_earned), 0)
+    INTO mons_score
+    FROM session_monster_kill
+    WHERE session_id = sid;
+
+    -- Tính điểm boss (nếu có dòng)
+    SELECT COALESCE((
+        SELECT points_earned FROM session_boss_kill WHERE session_id = sid LIMIT 1
+    ), 0)
+    INTO boss_score;
+
+    -- Cập nhật final_score
+    UPDATE game_sessions
+    SET final_score = mons_score + boss_score
+    WHERE session_id = sid;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER trg_update_score_from_monster
+AFTER INSERT OR UPDATE OR DELETE ON session_monster_kill
+FOR EACH ROW EXECUTE FUNCTION update_final_score();
+
+CREATE TRIGGER trg_update_score_from_boss
+AFTER INSERT OR UPDATE OR DELETE ON session_boss_kill
+FOR EACH ROW EXECUTE FUNCTION update_final_score();
+
+UPDATE session_monster_kill SET kill_count = kill_count WHERE session_id IS NOT NULL;
+UPDATE session_boss_kill SET kill_time = kill_time WHERE session_id IS NOT NULL;
+SELECT session_id, final_score FROM game_sessions ORDER BY session_id;
+
+UPDATE session_monster_kill SET kill_count = kill_count WHERE session_id IS NOT NULL;
+UPDATE session_boss_kill SET kill_time = kill_time WHERE session_id IS NOT NULL;
+
+INSERT INTO session_boss_kill (session_id, monster_id, kill_time) VALUES
+(1, 3, 360),
+(3, 3, 330),
+(5, 3, 480),
+(7, 3, 420),
+(9, 3, 315),
+(11, 3, 540),
+(13, 3, 450),
+(15, 3, 390),
+(17, 3, 300),
+(19, 3, 365);
+
+INSERT INTO session_monster_kill (session_id, monster_id, kill_count) VALUES
+(1, 1, 5),
+(2, 2, 2),
+(3, 1, 10),
+(4, 1, 4),
+(5, 2, 3),
+(6, 1, 6),
+(7, 2, 1),
+(8, 1, 7),
+(9, 2, 2),
+(10, 1, 3),
+(11, 2, 4),
+(12, 1, 9),
+(13, 2, 2),
+(14, 1, 8),
+(15, 2, 1),
+(16, 1, 6),
+(17, 2, 3),
+(18, 1, 7),
+(19, 2, 2),
+(20, 1, 4),
+(21, 2, 1),
+(22, 1, 10),
+(23, 2, 2),
+(24, 1, 5),
+(25, 2, 3),
+(26, 1, 6),
+(27, 2, 1),
+(28, 1, 8),
+(29, 2, 2),
+(30, 1, 9);
 
 -- Bảng nhân vật
 CREATE TABLE IF NOT EXISTS  characters (
     character_id INT PRIMARY KEY,
     max_hp INT NOT NULL DEFAULT 100,
-    max_item_slots INT NOT NULL DEFAULT 2,
-    player_id INT NOT NULL REFERENCES players(player_id)
+    max_item_slots INT NOT NULL DEFAULT 2
 );
 
+
 -- Chèn dữ liệu mẫu cho nhân vật
-INSERT INTO characters (character_id, max_hp, max_item_slots, player_id) VALUES
-(1, 120, 2, 1),
-(2, 100, 2, 2),
-(3, 150, 2, 3),
-(4, 90, 2, 4),
-(5, 110, 2, 5),
-(6, 95, 2, 6),
-(7, 130, 2, 7),
-(8, 105, 2, 8),
-(9, 100, 2, 9),
-(10, 140, 2, 10),
-(11, 115, 2, 11),
-(12, 125, 2, 12),
-(13, 85, 2, 13),
-(14, 150, 2, 14),
-(15, 135, 2, 15),
-(16, 100, 2, 16),
-(17, 110, 2, 17),
-(18, 95, 2, 18),
-(19, 120, 2, 19),
-(20, 100, 2, 20);
+INSERT INTO characters (character_id, max_hp, max_item_slots) VALUES
+(1, 120, 2),
+(2, 100, 2),
+(3, 150, 2),
+(4, 90, 2),
+(5, 110, 2),
+(6, 95, 2),
+(7, 130, 2),
+(8, 105, 2),
+(9, 100, 2),
+(10, 140, 2),
+(11, 115, 2),
+(12, 125, 2),
+(13, 85, 2),
+(14, 150, 2),
+(15, 135, 2),
+(16, 100, 2),
+(17, 110, 2),
+(18, 95, 2),
+(19, 120, 2),
+(20, 100, 2);
+
+
+CREATE TABLE IF NOT EXISTS session_character (
+    session_id INT REFERENCES game_sessions(session_id) ON DELETE CASCADE,
+    character_id INT REFERENCES characters(character_id),
+    time_death int,
+	PRIMARY KEY (session_id, character_id)
+); 
+
+CREATE OR REPLACE FUNCTION update_end_time_from_character_seconds()
+RETURNS TRIGGER AS $$
+DECLARE
+    sid INT;
+    max_death_secs INT;
+    start_time_var TIMESTAMP;
+    current_end_time TIMESTAMP;
+    boss_killed_flag BOOLEAN;
+BEGIN
+    -- Xác định session_id
+    IF TG_OP = 'DELETE' THEN
+        sid := OLD.session_id;
+    ELSE
+        sid := NEW.session_id;
+    END IF;
+
+    -- Lấy thông tin phiên chơi
+    SELECT start_time, end_time, boss_killed
+    INTO start_time_var, current_end_time, boss_killed_flag
+    FROM game_sessions
+    WHERE session_id = sid;
+
+    -- Nếu end_time chưa được đặt và chưa giết boss
+    IF current_end_time IS NULL AND (boss_killed_flag IS FALSE OR boss_killed_flag IS NULL) THEN
+
+        -- Lấy thời gian chết lớn nhất (nếu có)
+        SELECT MAX(time_death) INTO max_death_secs
+        FROM session_character
+        WHERE session_id = sid;
+
+        IF max_death_secs IS NOT NULL THEN
+            UPDATE game_sessions
+            SET end_time = start_time_var + (max_death_secs || ' seconds')::interval
+            WHERE session_id = sid;
+        ELSE
+            UPDATE game_sessions
+            SET end_time = start_time_var + INTERVAL '10 minutes'
+            WHERE session_id = sid;
+        END IF;
+    END IF;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
 
 
 
+
+
+
+
+CREATE TRIGGER trg_endtime_from_character_seconds
+AFTER INSERT OR UPDATE OR DELETE ON session_character
+FOR EACH ROW
+EXECUTE FUNCTION update_end_time_from_character_seconds();
+
+INSERT INTO session_character (session_id, character_id, time_death) VALUES
+(2, 1, 520),
+(4, 2, 590),
+(6, 3, 600),
+(8, 1, 585),
+(10, 5, 599),
+(12, 1, 601),
+(14, 7, 580),
+(16, 9, 610),
+(18, 2, 540),
+(20, 1, 570),
+(22, 3, 600),
+(24, 4, 600),
+(26, 5, 600),
+(28, 6, 600),
+(30, 7, 600);
+
+
+-- Bảng thành tựu
+CREATE TABLE IF NOT EXISTS achievements (
+    achievement_id INT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    condition_type VARCHAR(50) NOT NULL,
+    condition_value INT NOT NULL
+);
+
+
+-- Chèn dữ liệu mẫu cho thành tựu
+INSERT INTO achievements (achievement_id, name, description, condition_type, condition_value) VALUES
+(1, 'First Blood', 'Defeat your first monster.', 'kills', 1),
+(2, 'Monster Slayer', 'Defeat 100 monsters.', 'kills', 100),
+(3, 'Treasure Hunter', 'Collect 50 items.', 'items_collected', 50),
+(4, 'Champion', 'Win 10 game sessions.', 'wins', 10),
+(5, 'Veteran Player', 'Play 100 sessions.', 'sessions_played', 100),
+(6, 'Sharp Shooter', 'Achieve 10 headshots in a session.', 'headshots', 10),
+(7, 'Invincible', 'Win 5 sessions in a row.', 'win_streak', 5),
+(8, 'Explorer', 'Visit 20 different maps.', 'maps_visited', 20),
+(9, 'Rich Guy', 'Earn 10,000 points.', 'points_earned', 10000),
+(10, 'Collector', 'Own 20 unique items.', 'unique_items', 20),
+(11, 'Speed Runner', 'Complete a session in under 5 minutes.', 'fast_sessions', 1),
+(12, 'Perfect Game', 'Win a session without taking damage.', 'flawless_wins', 1);
+
+
+CREATE TABLE IF NOT EXISTS session_achievements (
+    session_id INT NOT NULL REFERENCES game_sessions(session_id) ON DELETE CASCADE,
+    achievement_id INT NOT NULL REFERENCES achievements(achievement_id) ON DELETE CASCADE,
+    PRIMARY KEY (session_id, achievement_id)
+);
+
+INSERT INTO session_achievements (session_id, achievement_id) VALUES
+(1, 1),
+(1, 2),
+(2, 3),
+(3, 1),
+(4, 4),
+(5, 2),
+(6, 5),
+(7, 3),
+(8, 1),
+(9, 4),
+(10, 2);
 
 -- Bảng vũ khí
 CREATE TABLE IF NOT EXISTS  items (
@@ -170,111 +534,72 @@ SELECT setval(
 );
 
 
--- Bảng quái vật
-CREATE TABLE IF NOT EXISTS monsters (
-    monster_id INT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    hp INT NOT NULL,
-    point INT NOT NULL,
-    damage INT NOT NULL,
-    type VARCHAR(20) NOT NULL,
-    speed VARCHAR(20) NOT NULL
+CREATE TABLE IF NOT EXISTS session_items (
+    session_id INT NOT NULL REFERENCES game_sessions(session_id) ON DELETE CASCADE,
+    item_id INT NOT NULL REFERENCES items(item_id) ON DELETE CASCADE,
+    damage INT,
+    PRIMARY KEY (session_id, item_id)
 );
 
--- Chèn dữ liệu mẫu cho quái vật
-INSERT INTO monsters (monster_id , name, hp, point, damage, type, speed) VALUES
-(1 ,'Weak monster', 50, 10, 2, 'Normal', 'Fast'),
-(2 ,'Strong monster', 400, 25, 10, 'Normal', 'Normal'),
-(3 , 'Boss', 5000, 500, 999, 'Boss', 'Slow');
+INSERT INTO session_items (session_id, item_id)
+VALUES 
+        (1, 1), (1, 2),
+        (2, 3), (2, 1),
+        (3, 4), (3, 5),
+        (4, 2), (4, 6),
+        (5, 7), (5, 8),
+        (6, 9), (6, 10),
+        (7, 11), (7, 12),
+        (8, 13), (8, 3),
+        (9, 14), (9, 5),
+        (10, 15), (10, 1);
 
--- 1. Xóa IDENTITY cũ nếu có
-ALTER TABLE monsters 
-ALTER COLUMN monster_id DROP IDENTITY IF EXISTS;
 
--- 2. Gán lại thuộc tính IDENTITY để tự tăng
-ALTER TABLE monsters 
-ALTER COLUMN monster_id ADD GENERATED BY DEFAULT AS IDENTITY;
-
--- 3. Cập nhật giá trị sequence để tránh trùng lặp khóa
-SELECT setval(
-  pg_get_serial_sequence('monsters', 'monster_id'),
-  (SELECT MAX(monster_id) FROM monsters)
+ CREATE TABLE IF NOT EXISTS character_on_game (
+    session_id INT REFERENCES game_sessions(session_id) ON DELETE CASCADE,
+    character_id INT REFERENCES characters(character_id),
+    PRIMARY KEY (session_id, character_id)
 );
 
+INSERT INTO character_on_game (session_id, character_id) VALUES
+(1, 2),
+(2, 1),
+(3, 4),
+(4, 2),
+(5, 6),
+(6, 3),
+(7, 8),
+(8, 1),
+(9, 3),
+(10, 5),
+(11, 2),
+(12, 1),
+(13, 1),
+(14, 7),
+(15, 5),
+(16, 9),
+(17, 7),
+(18, 2),
+(19, 6),
+(20, 1),
+(21, 4),
+(22, 3),
+(23, 2),
+(24, 4),
+(25, 5),
+(26, 5),
+(27, 6),
+(28, 6),
+(29, 7),
+(30, 7);
 
-
-
--- Bảng thành tựu
-CREATE TABLE IF NOT EXISTS achievements (
-    achievement_id INT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description TEXT NOT NULL,
-    condition_type VARCHAR(50) NOT NULL,
-    condition_value INT NOT NULL
-);
-
-
--- Chèn dữ liệu mẫu cho thành tựu
-INSERT INTO achievements (achievement_id, name, description, condition_type, condition_value) VALUES
-(1, 'First Blood', 'Defeat your first monster.', 'kills', 1),
-(2, 'Monster Slayer', 'Defeat 100 monsters.', 'kills', 100),
-(3, 'Treasure Hunter', 'Collect 50 items.', 'items_collected', 50),
-(4, 'Champion', 'Win 10 game sessions.', 'wins', 10),
-(5, 'Veteran Player', 'Play 100 sessions.', 'sessions_played', 100),
-(6, 'Sharp Shooter', 'Achieve 10 headshots in a session.', 'headshots', 10),
-(7, 'Invincible', 'Win 5 sessions in a row.', 'win_streak', 5),
-(8, 'Explorer', 'Visit 20 different maps.', 'maps_visited', 20),
-(9, 'Rich Guy', 'Earn 10,000 points.', 'points_earned', 10000),
-(10, 'Collector', 'Own 20 unique items.', 'unique_items', 20),
-(11, 'Speed Runner', 'Complete a session in under 5 minutes.', 'fast_sessions', 1),
-(12, 'Perfect Game', 'Win a session without taking damage.', 'flawless_wins', 1);
-
-
--- 1. Xóa IDENTITY cũ nếu có
-ALTER TABLE achievements 
-ALTER COLUMN achievement_id DROP IDENTITY IF EXISTS;
-
--- 2. Gán lại thuộc tính IDENTITY để tự tăng
-ALTER TABLE achievements 
-ALTER COLUMN achievement_id ADD GENERATED BY DEFAULT AS IDENTITY;
-
--- 3. Cập nhật giá trị sequence để tránh trùng lặp khóa
-SELECT setval(
-  pg_get_serial_sequence('achievements', 'achievement_id'),
-  (SELECT MAX(achievement_id) FROM achievements)
-);
-
-
-
-
--- Bảng phiên chơi
-CREATE TABLE IF NOT EXISTS game_sessions (
-    session_id INT PRIMARY KEY,
-    start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP,
-    final_score INT,
-    boss_killed BOOLEAN DEFAULT FALSE,
-    boss_kill_time INT,
-    player_id INT NOT NULL REFERENCES players(player_id),
-    character_id INT NOT NULL REFERENCES characters(character_id)
-);
-
--- Chèn dữ liệu mẫu cho phiên chơi
-INSERT INTO game_sessions (session_id, start_time, player_id, character_id) VALUES
-(1, '2025-06-01 10:00:00', 1, 1),
-(2, '2025-06-01 11:00:00', 2, 2),
-(3, '2025-06-02 14:30:00', 3, 3),
-(4, '2025-06-03 16:00:00', 4, 4),
-(5, '2025-06-03 17:00:00', 5, 5),
-(6, '2025-06-04 09:10:00', 6, 6),
-(7, '2025-06-05 12:00:00', 7, 7),
-(8, '2025-06-05 13:00:00', 8, 8),
-(9, '2025-06-06 15:00:00', 9, 9),
-(10, '2025-06-07 18:00:00', 10, 10);
-
-
-
-
+CREATE TABLE IF NOT EXISTS leaderboard (
+    leaderboard_id SERIAL PRIMARY KEY,
+    player_id INT UNIQUE REFERENCES players(player_id),
+    rank INT,
+    highest_score INT,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);		
 
 CREATE OR REPLACE FUNCTION update_highest_score()
 RETURNS TRIGGER AS $$
@@ -340,257 +665,6 @@ EXECUTE FUNCTION trg_refresh_leaderboard();
 
 
 
---#################################################
--- Bảng quái vật bị tiêu diệt trong phiên chơi
-CREATE TABLE IF NOT EXISTS session_monster_kills (
-    session_id INT NOT NULL REFERENCES game_sessions(session_id),
-    monster_id INT NOT NULL REFERENCES monsters(monster_id),
-    kill_time INT NOT NULL, -- Thời gian tính từ start_time (giây)
-    points_earned INT NOT NULL,
-    PRIMARY KEY (session_id, monster_id, kill_time)
-);
-
-
-CREATE OR REPLACE FUNCTION trg_calc_points_and_update_score()
-RETURNS TRIGGER AS $$
-DECLARE
-    monster_point INT;
-BEGIN
-    -- Lấy điểm của quái vật
-    SELECT point INTO monster_point
-    FROM monsters
-    WHERE monster_id = NEW.monster_id;
-
-    -- Gán vào NEW
-    NEW.points_earned := monster_point;
-
-    -- Cập nhật final_score (giả sử final_score ban đầu đã có)
-    UPDATE game_sessions
-    SET final_score = COALESCE(final_score, 0) + monster_point
-    WHERE session_id = NEW.session_id;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_before_insert_combined
-BEFORE INSERT ON session_monster_kills
-FOR EACH ROW
-EXECUTE FUNCTION trg_calc_points_and_update_score();
-
-
----------------------------------------------
-CREATE OR REPLACE FUNCTION trg_boss_kill_updates()
-RETURNS TRIGGER AS $$
-DECLARE
-    is_boss BOOLEAN;
-    kill_timestamp TIMESTAMP;
-BEGIN
-    SELECT type = 'Boss' INTO is_boss
-    FROM monsters WHERE monster_id = NEW.monster_id;
-
-    IF is_boss THEN
-        SELECT start_time + (NEW.kill_time || ' seconds')::interval
-        INTO kill_timestamp
-        FROM game_sessions WHERE session_id = NEW.session_id;
-
-        UPDATE game_sessions
-        SET end_time = kill_timestamp,
-            boss_killed = TRUE,
-            boss_kill_time = NEW.kill_time
-        WHERE session_id = NEW.session_id;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_boss_kill
-AFTER INSERT ON session_monster_kills
-FOR EACH ROW
-EXECUTE FUNCTION trg_boss_kill_updates();
-
-
-
-CREATE OR REPLACE FUNCTION trg_update_end_time_when_boss_killed()
-RETURNS TRIGGER AS $$
-DECLARE
-    is_boss BOOLEAN;
-    kill_ts TIMESTAMP;
-BEGIN
-    -- Kiểm tra nếu là quái Boss
-    SELECT (type = 'Boss') INTO is_boss
-    FROM monsters
-    WHERE monster_id = NEW.monster_id;
-
-    -- Nếu là Boss thì cập nhật game_sessions
-    IF is_boss THEN
-        -- Tính thời gian giết boss dựa vào start_time
-        SELECT start_time + (NEW.kill_time || ' seconds')::interval
-        INTO kill_ts
-        FROM game_sessions
-        WHERE session_id = NEW.session_id;
-
-        UPDATE game_sessions
-        SET 
-            boss_killed = TRUE,
-            boss_kill_time = NEW.kill_time,
-            end_time = kill_ts
-        WHERE session_id = NEW.session_id;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_boss_kill_update ON session_monster_kills;
-
-CREATE TRIGGER trg_boss_kill_update
-AFTER INSERT ON session_monster_kills
-FOR EACH ROW
-EXECUTE FUNCTION trg_update_end_time_when_boss_killed();
-
-
-
-
-
--- Chèn dữ liệu mẫu cho quái vật bị tiêu diệt
-INSERT INTO session_monster_kills (session_id, monster_id, kill_time) VALUES
-(1, 1, 180),
-(1, 3, 360),
-(2, 1, 200),
-(2, 2, 400),
-(3, 3, 600),
-(4, 1, 150),
-(5, 2, 300),
-(6, 1, 100),
-(6, 2, 280),
-(7, 3, 450),
-(8, 1, 190),
-(8, 1, 290),
-(9, 2, 310),
-(10, 3, 420);
-
-DROP TABLE IF EXISTS player_hp_events;
-
-CREATE TABLE IF NOT EXISTS player_hp_events (
-    session_id INT REFERENCES game_sessions(session_id) ON DELETE CASCADE,
-    character_id INT REFERENCES characters(character_id) ON DELETE CASCADE,
-    event_time INT,  -- thời điểm trong phiên chơi (giây)
-    new_hp INT CHECK (new_hp >= 0),
-    PRIMARY KEY (session_id, character_id)
-);
-
--- Hàm trigger để cập nhật end_time nếu người chơi chết
-CREATE OR REPLACE FUNCTION trg_player_death()
-RETURNS TRIGGER AS $$
-DECLARE
-    death_time TIMESTAMP;
-BEGIN
-    IF NEW.new_hp <= 0 THEN
-        SELECT start_time + (NEW.event_time || ' seconds')::interval
-        INTO death_time
-        FROM game_sessions
-        WHERE session_id = NEW.session_id;
-
-        UPDATE game_sessions
-        SET end_time = death_time
-        WHERE session_id = NEW.session_id
-        AND (end_time IS NULL OR death_time < end_time);  -- chỉ cập nhật nếu end_time chưa có hoặc sớm hơn
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_player_dies
-AFTER INSERT ON player_hp_events
-FOR EACH ROW
-EXECUTE FUNCTION trg_player_death();
-
-
--- Thêm bản ghi giả định người chơi chết vào player_hp_events
-INSERT INTO player_hp_events (session_id, character_id, event_time, new_hp)
-SELECT gs.session_id, gs.character_id, (FLOOR(random() * 600) + 100)::INT, 0
-FROM game_sessions gs
-WHERE NOT EXISTS (
-    SELECT 1 FROM session_monster_kills smk
-    WHERE smk.session_id = gs.session_id
-    AND smk.monster_id = 3  -- boss
-);
-
-
-CREATE TABLE IF NOT EXISTS session_achievements (
-    session_id INT NOT NULL REFERENCES game_sessions(session_id) ON DELETE CASCADE,
-    achievement_id INT NOT NULL REFERENCES achievements(achievement_id) ON DELETE CASCADE,
-    PRIMARY KEY (session_id, achievement_id)
-);
-
-INSERT INTO session_achievements (session_id, achievement_id) VALUES
-(1, 1),
-(1, 2),
-(2, 3),
-(3, 1),
-(4, 4),
-(5, 2),
-(6, 5),
-(7, 3),
-(8, 1),
-(9, 4),
-(10, 2);
-
-
-
-
--- Bảng trang bị của nhân vật
-CREATE TABLE IF NOT EXISTS character_equipment (
-    character_id INT NOT NULL REFERENCES characters(character_id),
-    slot_number INT NOT NULL CHECK (slot_number BETWEEN 1 AND 2),
-    item_id INT NOT NULL REFERENCES items(item_id),
-    equipped_at TEXT NOT NULL,
-    PRIMARY KEY (character_id, slot_number)
-);
-
-
-
--- Chèn dữ liệu mẫu cho trang bị nhân vật
--- Character 1 được trang bị item 1 và item 2
-INSERT INTO character_equipment (character_id, slot_number, item_id, equipped_at) VALUES
--- Character 1
-(1, 1, 1, '2025-06-01 09:55:00'),
-(1, 2, 2, '2025-06-01 09:55:00'),
-
--- Character 2
-(2, 1, 3, '2025-06-01 10:55:00'),
-(2, 2, 4, '2025-06-01 10:55:00'),
-
--- Character 3
-(3, 1, 5, '2025-06-02 14:25:00'),
-(3, 2, 6, '2025-06-02 14:25:00'),
-
--- Character 4
-(4, 1, 7, '2025-06-03 15:55:00'),
-(4, 2, 8, '2025-06-03 15:55:00'),
-
--- Character 5
-(5, 1, 9, '2025-06-03 16:55:00'),
-(5, 2, 10, '2025-06-03 16:55:00'),
-
--- Character 6
-(6, 1, 11, '2025-06-04 09:05:00'),
-(6, 2, 12, '2025-06-04 09:05:00'),
-
--- Character 7
-(7, 1, 13, '2025-06-05 11:55:00'),
-(7, 2, 14, '2025-06-05 11:55:00');
-
-
-
-
-
-
-
-
 
 
 
@@ -608,33 +682,6 @@ INSERT INTO admins (admin_id, username, email, password) VALUES
 (2, 'admin2', 'admin2@example.com', 'adminpass2');
 
 ---------------------ADMIN--------------------
-
-
-
--- 1. Tạo bảng session_items (nếu chưa có)
-CREATE TABLE IF NOT EXISTS session_items (
-    session_id INT NOT NULL REFERENCES game_sessions(session_id) ON DELETE CASCADE,
-    item_id INT NOT NULL REFERENCES items(item_id) ON DELETE CASCADE,
-    damage INT,
-    PRIMARY KEY (session_id, item_id)
-);
-
-INSERT INTO session_items (session_id, item_id, damage)
-SELECT x.session_id, x.item_id, i.damage
-FROM (
-    VALUES 
-        (1, 1), (1, 2),
-        (2, 3), (2, 1),
-        (3, 4), (3, 5),
-        (4, 2), (4, 6),
-        (5, 7), (5, 8),
-        (6, 9), (6, 10),
-        (7, 11), (7, 12),
-        (8, 13), (8, 3),
-        (9, 14), (9, 5),
-        (10, 15), (10, 1)
-) AS x(session_id, item_id)
-JOIN items i ON i.item_id = x.item_id;
 
 
 

@@ -2,9 +2,12 @@
 {% block title %}Trang chính{% endblock %}
 
 {% block content %}
+
+
+
 <div class="container mt-5">
     <div class="text-center mb-4 bg-dark text-light p-4 rounded">
-    <h2>🎮 Chào mừng, <strong>{{ current_user.username }}</strong>!</h2>
+    <h2 class="white">🎮 Chào mừng, <strong>{{ current_user.username }}</strong>!</h2>
     <p class="lead">Hãy chọn một chức năng để bắt đầu:</p>
 </div>
 
@@ -42,7 +45,7 @@
                 <div class="card-body">
                     <h5 class="card-title">🏅 Thành tựu</h5>
                     <p class="card-text">Xem những thành tựu bạn đã đạt được.</p>
-                    <a href="{{ url_for('achievements') }}" class="btn btn-dark">Xem ngay</a>
+                    <a href="{{ url_for('achievements') }}" class="btn btn-light">Xem ngay</a>
                 </div>
             </div>
         </div>

@@ -36,13 +36,11 @@ class GameSession(db.Model):
     end_time = db.Column(db.DateTime)
     final_score = db.Column(db.Integer)
     boss_killed = db.Column(db.Boolean)
-    boss_kill_time = db.Column(db.DateTime)
     player_id = db.Column(db.Integer, db.ForeignKey('players.player_id'))
-    character_id = db.Column(db.Integer, db.ForeignKey('characters.character_id'))
 
 
     player = relationship('Player', backref='sessions')
-    character = relationship('Character')
+
 
 
 from sqlalchemy.orm import relationship
@@ -64,7 +62,7 @@ class Character(db.Model):
     character_id = db.Column(db.Integer, primary_key=True)
     max_hp = db.Column(db.Integer, nullable=False)
     max_item_slots = db.Column(db.Integer, nullable=False)
-    player_id = db.Column(db.Integer, db.ForeignKey('players.player_id'), nullable=False)
+    
 
 class Item(db.Model):
     __tablename__ = 'items'
@@ -111,15 +109,7 @@ class SessionMonsterKill(db.Model):
 
 from sqlalchemy.orm import relationship
 
-class CharacterEquipment(db.Model):
-    __tablename__ = 'character_equipment'
-    character_id = db.Column(db.Integer, db.ForeignKey('characters.character_id'), primary_key=True)
-    slot_number = db.Column(db.Integer, primary_key=True)
-    item_id = db.Column(db.Integer, db.ForeignKey('items.item_id'))
-    equipped_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    item = relationship('Item')
-    character = relationship('Character')
 
 
 class Admin(db.Model, UserMixin):
@@ -198,18 +188,18 @@ def admin_view_sessions(pid):
         return redirect(url_for('home'))
 
     sessions = db.session.execute(text("""
-        SELECT 
+    SELECT 
     gs.session_id,
     gs.start_time,
     gs.end_time,
     gs.final_score,
     i.name AS weapon_name
-FROM game_sessions gs
-LEFT JOIN characters c ON c.character_id = gs.character_id
-LEFT JOIN character_equipment ce ON ce.character_id = c.character_id AND ce.slot_number = 1
-LEFT JOIN items i ON i.item_id = ce.item_id
+FROM session_items si
+JOIN game_sessions gs ON gs.session_id = si.session_id
+JOIN items i ON i.item_id = si.item_id
 WHERE gs.player_id = :pid
 ORDER BY gs.start_time DESC;
+
 
     """), {'pid': pid}).fetchall()
 
@@ -266,7 +256,6 @@ def delete_player(pid):
 
     # Xoá tất cả dữ liệu liên quan nếu cần, ví dụ: sessions, characters...
     GameSession.query.filter_by(player_id=pid).delete()
-    Character.query.filter_by(player_id=pid).delete()
     Leaderboard.query.filter_by(player_id=pid).delete()
 
     db.session.delete(player)
@@ -365,6 +354,7 @@ def edit_weapon(item_id):
     return render_template('edit_weapon.html', item=item)
 
 
+from sqlalchemy import text
 @app.route('/admin/achievements', methods=['GET', 'POST'])
 def admin_achievements():
     if request.method == 'POST':
@@ -387,7 +377,25 @@ def admin_achievements():
         return redirect(url_for('admin_achievements'))
 
     achievements = Achievement.query.all()
-    return render_template('admin_achievements.html', achievements=achievements)
+
+    # 👉 Lấy thống kê thành tựu theo người chơi
+    query = text("""
+    SELECT p.username AS player_name,
+           COUNT(sa.achievement_id) AS total_achievements,
+           COALESCE(SUM(a.condition_value), 0) AS total_points
+    FROM players p
+    LEFT JOIN game_sessions gs ON gs.player_id = p.player_id
+    LEFT JOIN session_achievements sa ON sa.session_id = gs.session_id
+    LEFT JOIN achievements a ON a.achievement_id = sa.achievement_id
+    GROUP BY p.username
+    ORDER BY total_points DESC
+""")
+
+
+    achievement_summary = db.session.execute(query).fetchall()
+
+    return render_template('admin_achievements.html', achievements=achievements, achievement_summary=achievement_summary)
+
 
 
 from sqlalchemy.sql import text
@@ -395,11 +403,13 @@ from sqlalchemy.sql import text
 @app.route('/admin/characters')
 def admin_characters():
     used_characters = db.session.execute(text("""
-        SELECT c.character_id, c.max_hp, c.max_item_slots, c.player_id, COUNT(gs.session_id) AS usage_count
-        FROM characters c
-        JOIN game_sessions gs ON c.character_id = gs.character_id
-        GROUP BY c.character_id, c.max_hp, c.max_item_slots, c.player_id
-        ORDER BY usage_count DESC
+            SELECT c.character_id, c.max_hp, COUNT(sc.session_id) AS usage_count
+            FROM characters c
+            JOIN character_on_game sc ON c.character_id = sc.character_id
+            GROUP BY c.character_id, c.max_hp, c.max_item_slots
+            ORDER BY usage_count DESC;
+
+
     """)).fetchall()
 
     return render_template("admin_characters.html", used_characters=used_characters)
@@ -471,13 +481,22 @@ def leaderboard():
 
 
 
+from sqlalchemy import text
+
 @app.route('/history')
 @login_required
 def history():
-    sessions = GameSession.query.filter_by(player_id=current_user.player_id).all()
+    sql = text("""
+        SELECT gs.*, sbk.kill_time AS boss_kill_time
+        FROM game_sessions gs
+        LEFT JOIN session_boss_kill sbk ON gs.session_id = sbk.session_id
+        WHERE gs.player_id = :player_id
+        ORDER BY gs.start_time DESC
+    """)
+    result = db.session.execute(sql, {"player_id": current_user.player_id})
+    sessions = result.fetchall()
     return render_template('session_table.html', sessions=sessions)
 
-from sqlalchemy import text
 
 from sqlalchemy import text
 
@@ -487,15 +506,25 @@ def monster_stats(session_id):
     sql = text("""
         SELECT
             m.name AS monster_name,
-            COUNT(*) AS kill_count,
-            SUM(sm.points_earned) AS total_points
-        FROM session_monster_kills sm
-        JOIN monsters m ON sm.monster_id = m.monster_id
-        WHERE sm.session_id = :session_id
-        GROUP BY m.name
-        ORDER BY total_points DESC
+            x.kill_count,
+            m.point AS point_per_kill,
+            x.points_earned AS total_points
+        FROM (
+            -- Quái thường
+            SELECT monster_id, kill_count, points_earned
+            FROM session_monster_kill
+            WHERE session_id = :session_id
+
+            UNION ALL
+
+            -- Boss (chỉ 1 kill)
+            SELECT monster_id, 1 AS kill_count, points_earned
+            FROM session_boss_kill
+            WHERE session_id = :session_id
+        ) x
+        JOIN monsters m ON x.monster_id = m.monster_id
     """)
-    
+
     results = db.session.execute(sql, {'session_id': session_id}).fetchall()
     total_score = sum(row.total_points for row in results)
 
@@ -511,19 +540,19 @@ def monster_stats(session_id):
 def weapons():
     results = db.session.execute(text("""
         SELECT 
-            p.username,
-            c.character_id,
-            i.name AS weapon_name,
-            i.type AS weapon_type,
-            i.rarity,
-            ce.slot_number,
-            ce.equipped_at
-        FROM players p
-        JOIN game_sessions gs ON gs.player_id = p.player_id
-        JOIN characters c ON c.character_id = gs.character_id
-        JOIN character_equipment ce ON ce.character_id = c.character_id
-        JOIN items i ON i.item_id = ce.item_id
-        WHERE p.player_id = :pid
+    p.username,
+    c.character_id,
+    i.name AS weapon_name,
+    i.type AS weapon_type,
+    i.rarity
+    FROM players p
+    JOIN game_sessions gs ON gs.player_id = p.player_id
+    JOIN character_on_game sc ON sc.session_id = gs.session_id
+    JOIN characters c ON c.character_id = sc.character_id
+    JOIN session_items se ON se.session_id = gs.session_id
+    JOIN items i ON i.item_id = se.item_id
+    WHERE p.player_id = :pid;
+
     """), {'pid': current_user.player_id})
 
     weapons = results.fetchall()
