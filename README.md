@@ -11,7 +11,7 @@ A web-based application for managing game sessions, players, characters, weapons
 
 ## 🖼️ Screenshots
 ### Home Page
-![Home Page](https://raw.githubusercontent.com/youruser/yourrepo/main/photos/players/homepage.png)
+![Home Page](https://raw.githubusercontent.com/lekimphu0209/game_management/main/photos/players/homepage.png)
 
 
 ### Player Login
