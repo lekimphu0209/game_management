@@ -1,0 +1,151 @@
+{% extends "layout.html" %}
+{% block title %}Quản lý Quái Vật{% endblock %}
+
+{% block content %}
+
+<style>
+    .header-title {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #00bfff;
+    }
+
+    form.monster-form {
+        margin-bottom: 30px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        border-radius: 6px;
+        background-color: #fefefe;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
+    }
+
+    .form-group {
+        flex: 1 1 13%;
+        min-width: 120px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-weight: bold;
+        font-size: 13px;
+    }
+
+    .form-group input {
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .btn-save {
+        padding: 6px 16px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        height: 38px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        background-color: #ffffff;
+    }
+
+    th, td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #e0f7ff;
+        color: #007acc;
+        font-weight: bold;
+        font-size: 15px;
+    }
+
+    .row-light {
+        background-color: #ffffff;
+    }
+
+    .row-dark {
+        background-color: #f0f8ff;
+    }
+</style>
+
+
+<h2 class="header-title">Quản lý Quái Vật</h2>
+
+<form method="POST" class="monster-form">
+    <input type="hidden" name="id" value="{{ monster.monster_id if monster else '' }}">
+
+    <div class="form-group">
+        <label>Tên</label>
+        <input type="text" name="name" required value="{{ monster.name if monster else '' }}">
+    </div>
+    <div class="form-group">
+        <label>HP</label>
+        <input type="number" name="hp" required value="{{ monster.hp if monster else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Damage</label>
+        <input type="number" name="damage" required value="{{ monster.damage if monster else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Point</label>
+        <input type="number" name="point" required value="{{ monster.point if monster else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Loại</label>
+        <input type="text" name="type" required value="{{ monster.type if monster else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Tốc độ</label>
+        <input type="text" name="speed" required value="{{ monster.speed if monster else '' }}">
+    </div>
+
+    <!-- Nút Lưu căn giữa -->
+    <div style="width: 100%; text-align: center; margin-top: 10px;">
+        <button type="submit" class="btn-save">Lưu</button>
+    </div>
+</form>
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên</th>
+            <th>HP</th>
+            <th>Damage</th>
+            <th>Point</th>
+            <th>Loại</th>
+            <th>Tốc độ</th>
+            
+        </tr>
+    </thead>
+    <tbody>
+        {% for monster in monsters %}
+        <tr class="{{ 'row-light' if loop.index0 % 2 == 0 else 'row-dark' }}">
+            <td>{{ monster.monster_id }}</td>
+            <td>{{ monster.name }}</td>
+            <td>{{ monster.hp }}</td>
+            <td>{{ monster.damage }}</td>
+            <td>{{ monster.point }}</td>
+            <td>{{ monster.type }}</td>
+            <td>{{ monster.speed }}</td>
+            
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

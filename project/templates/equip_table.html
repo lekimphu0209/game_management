@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block title %}Danh sách Vũ khí Đã Trang Bị{% endblock %}
+
+{% block content %}
+<h2 class="mb-4 text-center text-white fw-bold">🗡️ Danh sách Vũ khí đã được trang bị</h2>
+
+<div class="table-responsive">
+  <table class="table table-striped table-hover table-bordered text-center align-middle shadow rounded">
+    <thead class="table-dark">
+      <tr>
+        <th>Người chơi</th>
+        <th>Nhân vật</th>
+        <th>Vũ khí</th>
+        <th>Loại</th>
+        <th>Độ hiếm</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for weapon in weapons %}
+      <tr>
+        <td>{{ weapon.username }}</td>
+        <td>{{ weapon.character_id }}</td>
+        <td>{{ weapon.weapon_name }}</td>
+        <td>{{ weapon.weapon_type }}</td>
+        <td>
+          <span class="nav-link 
+              {% if weapon.rarity == 'Legendary' %}bg-warning text-dark
+              {% elif weapon.rarity == 'Epic' %}bg-purple
+              {% elif weapon.rarity == 'Rare' %}bg-purple
+              {% elif weapon.rarity == 'Uncommon' %}bg-purple
+              {% else %}bg-secondary{% endif %}">
+              {{ weapon.rarity }}
+          </span>
+        </td>
+
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

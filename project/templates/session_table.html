@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% block title %}🕹️ Lịch sử chơi{% endblock %}
+{% block content %}
+<h2 class="mb-4 text-center text-white fw-bold">🕹️ Lịch sử chơi</h2>
+
+<div class="table-responsive">
+  <table class="table table-striped table-bordered text-center align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>Bắt đầu</th>
+        <th>Kết thúc</th>
+        <th>Điểm</th>
+        <th>Giết boss</th>
+        <th>Chi tiết</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in sessions %}
+      <tr>
+        <td>{{ s.start_time.strftime('%H:%M %d/%m') }}</td>
+        <td>{{ s.end_time.strftime('%H:%M %d/%m') if s.end_time else 'Đang chơi' }}</td>
+        <td>{{ s.final_score }}</td>
+        <td>{{ '✅' if s.boss_killed else '❌' }}</td>
+        <td>
+          <a class="btn btn-sm btn-outline-info" href="{{ url_for('monster_stats', session_id=s.session_id) }}">
+            Xem
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

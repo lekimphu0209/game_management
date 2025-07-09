@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+
+{% block title %}Thống kê quái bị tiêu diệt{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">👾 Thống kê Quái bị Tiêu diệt (Phiên {{ session_id }})</h2>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover text-center align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Loại quái</th>
+                    <th>Số lần tiêu diệt</th>
+                    <th>Điểm đạt được</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in stats %}
+                <tr>
+                    <td>{{ row.monster_name }}</td>
+                    <td>{{ row.kill_count }}</td>
+                    <td>{{ row.total_points }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-success fw-bold">
+                    <td colspan="2">Tổng điểm</td>
+                    <td>{{ total_score }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

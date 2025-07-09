@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Trang quản lý người chơi</title>
+  <style>
+    #tablesContainer { border-collapse: collapse; width: 80%; margin: auto; display: none; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    h1, h2 { text-align: center; }
+  </style>
+</head>
+<body>
+  <h2>Đăng nhập</h2>
+  <form id="loginForm">
+    <input type="email" id="email" required placeholder="Email">
+    <input type="password" id="password" required placeholder="Password">
+    <button type="submit">Đăng nhập</button>
+  </form>
+
+  <div id="userInfo"></div>
+
+  <!-- Bảng -->
+  <div id="tablesContainer">
+    <h1>Danh sách người chơi</h1>
+    <table id="playerTableWrapper">
+      <thead>
+        <tr><th>ID</th><th>Tên người chơi</th><th>Email</th><th>Điểm cao nhất</th><th>Xem phiên chơi</th></tr>
+      </thead>
+      <tbody id="playerTable"></tbody>
+    </table>
+
+    <h2>Danh sách nhân vật</h2>
+    <table id="characterTableWrapper">
+      <thead>
+        <tr><th>ID</th><th>Max HP</th><th>Slot đồ</th><th>Player ID</th></tr>
+      </thead>
+      <tbody id="characterTable"></tbody>
+    </table>
+
+    <h2>Danh sách items</h2>
+    <table id="itemTableWrapper">
+      <thead>
+        <tr><th>ID</th><th>Tên</th><th>Loại</th><th>Sát thương</th><th>Hiếm</th><th>Mô tả</th></tr>
+      </thead>
+      <tbody id="itemTable"></tbody>
+    </table>
+
+    <h2>Danh sách Quái vật</h2>
+    <table id="monsterTableWrapper">
+      <thead>
+        <tr><th>ID</th><th>Tên</th><th>HP</th><th>Điểm</th><th>Sát thương</th><th>Loại</th><th>Tốc độ</th></tr>
+      </thead>
+      <tbody id="monsterTable"></tbody>
+    </table>
+
+    <h2>Danh sách Thành tựu</h2>
+    <table id="achievementTableWrapper">
+      <thead>
+        <tr><th>ID</th><th>Tên</th><th>Mô tả</th><th>Loại điều kiện</th><th>Giá trị</th></tr>
+      </thead>
+      <tbody id="achievementTable"></tbody>
+    </table>
+
+    <h2>Bảng xếp hạng</h2>
+    <table id="leaderboardTableWrapper">
+      <thead>
+        <tr><th>ID</th><th>Player ID</th><th>Hạng</th><th>Điểm</th><th>Ngày cập nhật</th></tr>
+      </thead>
+      <tbody id="leaderboardTable"></tbody>
+    </table>
+
+    <h2>Danh sách phiên chơi</h2>
+    <table id="sessionTableWrapper">
+      <thead>
+        <tr><th>ID</th><th>Bắt đầu</th><th>Kết thúc</th><th>Điểm</th><th>Boss</th><th>Thời gian Boss</th><th>Player</th><th>Character</th></tr>
+      </thead>
+      <tbody id="sessionTable"></tbody>
+    </table>
+
+    <h2>Quái vật bị hạ trong phiên</h2>
+    <table id="killTableWrapper">
+      <thead>
+        <tr><th>Session</th><th>Monster</th><th>Thời gian</th><th>Điểm</th></tr>
+      </thead>
+      <tbody id="killTable"></tbody>
+    </table>
+
+    <h2>Trang bị nhân vật</h2>
+    <table id="equipTableWrapper">
+      <thead>
+        <tr><th>Character ID</th><th>Slot</th><th>Item</th><th>Thời gian</th></tr>
+      </thead>
+      <tbody id="equipTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const res = await fetch("http://localhost:5000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        const playerId = data.user.player_id;
+
+        // Hiển thị thông tin người dùng
+        const userInfoDiv = document.getElementById("userInfo");
+        userInfoDiv.innerHTML = `
+          <h3>Chào mừng, ${data.user.username}!</h3>
+          <p>Email: ${data.user.email}</p>
+          <p>Điểm cao nhất: ${data.user.highest_score}</p>
+          <div id="sessionInfo"></div>
+        `;
+
+        // Nút xem phiên chơi
+        const btn = document.createElement("button");
+        btn.id = "btnXemSessions";
+        btn.textContent = "Xem phiên chơi của tôi";
+        btn.addEventListener("click", () => {
+          viewSessions(playerId);
+        });
+        userInfoDiv.appendChild(btn);
+
+        // Hiển thị bảng người chơi
+        await loadPlayers();
+        document.getElementById("tablesContainer").style.display = "block";
+
+        // Bảng xếp hạng
+        let leaderboardHTML = "<h4>Bảng xếp hạng:</h4><ol>";
+        data.leaderboard.forEach(entry => {
+          leaderboardHTML += `<li>${entry.username}: ${entry.score}</li>`;
+        });
+        leaderboardHTML += "</ol>";
+        const leaderboardDiv = document.createElement("div");
+        leaderboardDiv.innerHTML = leaderboardHTML;
+        userInfoDiv.appendChild(leaderboardDiv);
+
+
+      } else {
+        alert(data.error || "Đăng nhập thất bại");
+      }
+    } catch (err) {
+      console.error("Lỗi khi gửi yêu cầu đăng nhập:", err);
+    }
+  });
+});
+
+
+
+
+    async function loadAllData() {
+      await loadPlayers();
+      await loadCharacters();
+      await loadItems();
+      await loadMonsters();
+      await loadAchievements();
+      await loadLeaderboard();
+      await loadGameSessions();
+      await loadSessionKills();
+      await loadEquipments();
+    }
+
+    async function fetchAndFill(url, tableId, renderRow, emptyMsg, colCount) {
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const table = document.getElementById(tableId);
+        table.innerHTML = "";
+        if (!data.length) {
+          table.innerHTML = `<tr><td colspan="${colCount}">${emptyMsg}</td></tr>`;
+        } else {
+          data.forEach(item => {
+            const row = document.createElement("tr");
+            row.innerHTML = renderRow(item);
+            table.appendChild(row);
+          });
+        }
+      } catch (err) {
+        console.error(`Lỗi khi fetch ${url}:`, err);
+      }
+    }
+
+    // Các hàm load cụ thể
+    const loadPlayers = () => fetchAndFill("http://localhost:5000/api/players", "playerTable", p => `
+      <td>${p.player_id}</td>
+      <td>${p.username}</td>
+      <td>${p.email}</td>
+      <td>${p.highest_score}</td>
+      `, "Không có người chơi nào", 5);
+
+
+    const loadCharacters = () => fetchAndFill("http://localhost:5000/api/characters", "characterTable", c => `
+      <td>${c.character_id}</td><td>${c.max_hp}</td><td>${c.max_item_slots}</td><td>${c.player_id}</td>
+    `, "Không có nhân vật nào", 4);
+
+    const loadItems = () => fetchAndFill("http://localhost:5000/api/items", "itemTable", i => `
+      <td>${i.item_id}</td><td>${i.name}</td><td>${i.type}</td><td>${i.damage}</td><td>${i.rarity}</td><td>${i.description}</td>
+    `, "Không có vật phẩm nào", 6);
+
+    const loadMonsters = () => fetchAndFill("http://localhost:5000/api/monsters", "monsterTable", m => `
+      <td>${m.monster_id}</td><td>${m.name}</td><td>${m.hp}</td><td>${m.point}</td><td>${m.damage}</td><td>${m.type}</td><td>${m.speed}</td>
+    `, "Không có quái vật nào", 7);
+
+    const loadAchievements = () => fetchAndFill("http://localhost:5000/api/achievements", "achievementTable", a => `
+      <td>${a.achievement_id}</td><td>${a.name}</td><td>${a.description}</td><td>${a.condition_type}</td><td>${a.condition_value}</td>
+    `, "Không có thành tựu nào", 5);
+
+    const loadLeaderboard = () => fetchAndFill("http://localhost:5000/api/leaderboard", "leaderboardTable", l => `
+      <td>${l.leaderboard_id}</td><td>${l.player_id}</td><td>${l.rank}</td><td>${l.score}</td><td>${new Date(l.last_updated).toLocaleString()}</td>
+    `, "Không có dữ liệu bảng xếp hạng", 5);
+
+    const loadGameSessions = () => fetchAndFill("http://localhost:5000/api/game_sessions", "sessionTable", s => `
+      <td>${s.session_id}</td><td>${new Date(s.start_time).toLocaleString()}</td><td>${s.end_time ? new Date(s.end_time).toLocaleString() : "-"}</td><td>${s.final_score ?? "-"}</td><td>${s.boss_killed ? "✔️" : "❌"}</td><td>${s.boss_kill_time ?? "-"}</td><td>${s.player_id}</td><td>${s.character_id}</td>
+    `, "Không có phiên chơi nào", 8);
+
+    const loadSessionKills = () => fetchAndFill("http://localhost:5000/api/session_monster_kills", "killTable", k => `
+      <td>${k.session_id}</td><td>${k.monster_id}</td><td>${k.kill_time}</td><td>${k.points_earned}</td>
+    `, "Không có dữ liệu tiêu diệt quái vật", 4);
+
+    const loadEquipments = () => fetchAndFill("http://localhost:5000/api/character_equipment", "equipTable", e => `
+      <td>${e.character_id}</td><td>${e.slot_number}</td><td>${e.item_id}</td><td>${new Date(e.equipped_at).toLocaleString()}</td>
+    `, "Không có dữ liệu trang bị", 4);
+
+    async function viewSessions(playerId) {
+  try {
+    console.log("Gọi viewSessions với playerId:", playerId);
+    const res = await fetch(`http://localhost:5000/api/player_sessions/${playerId}`);
+    const sessions = await res.json();
+
+    if (!Array.isArray(sessions)) {
+      throw new Error("Phản hồi không hợp lệ");
+    }
+
+    let html = "<h3>Phiên chơi:</h3><ul>";
+    sessions.forEach(s => {
+      html += `<li>
+        Thời gian: ${s.start_time} – ${s.end_time || "Đang chơi"}<br>
+        Điểm: ${s.score}<br>
+        Boss: ${s.killed_boss ? "✔️ lúc " + s.kill_time : "❌ Không"}
+      </li>`;
+    });
+    html += "</ul>";
+    document.getElementById("sessionInfo").innerHTML = html;
+
+  } catch (err) {
+    console.error("Lỗi khi fetch phiên chơi:", err);
+    document.getElementById("sessionInfo").innerHTML = `<p style="color:red;">Không thể tải phiên chơi.</p>`;
+  }
+}
+
+
+
+
+  </script>
+</body>
+</html>

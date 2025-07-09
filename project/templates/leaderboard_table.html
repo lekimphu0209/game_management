@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block title %}Bảng xếp hạng{% endblock %}
+
+{% block content %}
+<h2 class="mb-4 text-center text-white fw-bold">🏆 Bảng xếp hạng</h2>
+
+<div class="table-responsive">
+  <table class="table table-hover table-bordered text-center align-middle">
+    <thead class="table-dark">
+  <tr>
+    <th scope="col">Hạng</th>
+    <th scope="col">Người chơi</th>
+    <th scope="col">Điểm</th>
+    <th scope="col">Cập nhật</th>  <!-- Thêm dòng này -->
+  </tr>
+</thead>
+
+    <tbody>
+  {% for player in top_players %}
+    <tr>
+      <td><strong>{{ loop.index }}</strong></td>
+      <td>{{ player.player.username }}</td>
+      <td>{{ player.highest_score }}</td>
+      <td>{{ player.last_updated.strftime('%Y-%m-%d %H:%M:%S') }}</td> <!-- Dòng này -->
+    </tr>
+  {% endfor %}
+</tbody>
+
+  </table>
+</div>
+{% endblock %}
